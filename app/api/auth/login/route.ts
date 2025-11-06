@@ -1,52 +1,69 @@
 import { type NextRequest, NextResponse } from "next/server"
-
-// Mock user database - in production, use a real database
-const users = [
-  {
-    id: "1",
-    email: "admin@impactsolidaire.org",
-    password: "admin123",
-    role: "admin",
-    fullName: "Admin User",
-  },
-  {
-    id: "2",
-    email: "pm@impactsolidaire.org",
-    password: "pm123",
-    role: "project_manager",
-    fullName: "Project Manager",
-  },
-  {
-    id: "3",
-    email: "donor@impactsolidaire.org",
-    password: "donor123",
-    role: "donor",
-    fullName: "Donor User",
-  },
-]
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
 
-    const user = users.find((u) => u.email === email && u.password === password)
-
-    if (!user) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
-    // In production, create a proper JWT token
-    const token = Buffer.from(JSON.stringify({ userId: user.id, email: user.email, role: user.role })).toString(
-      "base64",
-    )
+    const supabase = await createServerSupabaseClient()
 
-    return NextResponse.json({
-      token,
-      role: user.role,
-      userId: user.id,
-      fullName: user.fullName,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     })
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 401 })
+    }
+
+    if (!data.user) {
+      return NextResponse.json({ error: "Authentication failed" }, { status: 401 })
+    }
+
+    // Fetch user profile from public.users table
+    const { data: userProfile, error: profileError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", data.user.id)
+      .single()
+
+    if (profileError || !userProfile) {
+      return NextResponse.json({ error: "User profile not found" }, { status: 404 })
+    }
+
+    // Create response with user data
+    const response = NextResponse.json({
+      token: data.session?.access_token,
+      user: userProfile,
+      refreshToken: data.session?.refresh_token,
+    })
+
+    // Set httpOnly cookies for middleware authentication
+    if (data.session?.access_token) {
+      response.cookies.set("auth_token", data.session.access_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60, // 1 hour
+      })
+    }
+
+    if (data.session?.refresh_token) {
+      response.cookies.set("refresh_token", data.session.refresh_token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      })
+    }
+
+    return response
   } catch (error) {
+    console.error("Login error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

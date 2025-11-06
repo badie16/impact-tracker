@@ -9,6 +9,7 @@ export default function AdminPage() {
   const [isAuthorized, setIsAuthorized] = useState(false)
 
   useEffect(() => {
+    
     const role = localStorage.getItem("role")
     if (role !== "admin") {
       router.push("/")

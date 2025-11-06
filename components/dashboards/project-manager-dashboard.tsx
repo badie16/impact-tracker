@@ -5,19 +5,22 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useProjects } from "@/lib/hooks/use-projects"
+import { useIndicators } from "@/lib/hooks/use-indicators"
+import { AlertCircle, CheckCircle2 } from "lucide-react"
 
 interface Project {
-  id: number
+  id: string
   name: string
   description: string
-  status: "Active" | "Completed" | "On Hold"
-  startDate: string
-  endDate: string
+  status: "active" | "completed" | "on_hold"
+  start_date: string
+  end_date: string
 }
 
 interface Indicator {
-  id: number
-  projectId: number
+  id: string
+  project_id: string
   name: string
   description: string
   currentValue: number
@@ -28,75 +31,18 @@ interface Indicator {
 }
 
 export function ProjectManagerDashboard() {
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: 1,
-      name: "Education Initiative",
-      description: "Providing quality education to rural communities",
-      status: "Active",
-      startDate: "2024-01-15",
-      endDate: "2024-12-31",
-    },
-    {
-      id: 2,
-      name: "Water Wells Project",
-      description: "Building sustainable water infrastructure",
-      status: "Active",
-      startDate: "2024-02-01",
-      endDate: "2025-01-31",
-    },
-  ])
+  const { projects = [], loading: projectsLoading, error: projectsError } = useProjects()
+  const {
+    indicators = [],
+    loading: indicatorsLoading,
+    error: indicatorsError,
+    mutate: mutateIndicators,
+  } = useIndicators()
 
-  const [indicators, setIndicators] = useState<Indicator[]>([
-    {
-      id: 1,
-      projectId: 1,
-      name: "Children Enrolled",
-      description: "Number of children enrolled in the program",
-      currentValue: 150,
-      targetValue: 200,
-      unit: "students",
-      lastUpdated: "2024-10-25",
-      trend: "up",
-    },
-    {
-      id: 2,
-      projectId: 1,
-      name: "Teachers Trained",
-      description: "Number of teachers trained",
-      currentValue: 12,
-      targetValue: 15,
-      unit: "teachers",
-      lastUpdated: "2024-10-20",
-      trend: "stable",
-    },
-    {
-      id: 3,
-      projectId: 2,
-      name: "Wells Constructed",
-      description: "Number of water wells constructed",
-      currentValue: 6,
-      targetValue: 10,
-      unit: "wells",
-      lastUpdated: "2024-10-22",
-      trend: "up",
-    },
-    {
-      id: 4,
-      projectId: 2,
-      name: "People Served",
-      description: "Number of people with access to clean water",
-      currentValue: 5000,
-      targetValue: 8000,
-      unit: "people",
-      lastUpdated: "2024-10-25",
-      trend: "up",
-    },
-  ])
-
-  const [selectedProject, setSelectedProject] = useState<number>(1)
+  const [selectedProject, setSelectedProject] = useState<string>("")
   const [showIndicatorForm, setShowIndicatorForm] = useState(false)
   const [editingIndicator, setEditingIndicator] = useState<Indicator | null>(null)
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [indicatorForm, setIndicatorForm] = useState({
     name: "",
     description: "",
@@ -104,63 +50,69 @@ export function ProjectManagerDashboard() {
     targetValue: "",
     unit: "",
   })
+  const [indicatorErrors, setIndicatorErrors] = useState<Record<string, string>>({})
 
-  const projectIndicators = indicators.filter((i) => i.projectId === selectedProject)
+  if (!selectedProject && (projects as Project[]).length > 0) {
+    setSelectedProject((projects as Project[])[0].id)
+  }
 
-  const handleAddIndicator = () => {
-    if (indicatorForm.name && indicatorForm.currentValue && indicatorForm.targetValue) {
-      if (editingIndicator) {
-        setIndicators(
-          indicators.map((i) =>
-            i.id === editingIndicator.id
-              ? {
-                  ...i,
-                  name: indicatorForm.name,
-                  description: indicatorForm.description,
-                  currentValue: Number.parseInt(indicatorForm.currentValue),
-                  targetValue: Number.parseInt(indicatorForm.targetValue),
-                  unit: indicatorForm.unit,
-                  lastUpdated: new Date().toISOString().split("T")[0],
-                }
-              : i,
-          ),
-        )
-        setEditingIndicator(null)
-      } else {
-        setIndicators([
-          ...indicators,
-          {
-            id: Math.max(...indicators.map((i) => i.id), 0) + 1,
-            projectId: selectedProject,
-            name: indicatorForm.name,
-            description: indicatorForm.description,
-            currentValue: Number.parseInt(indicatorForm.currentValue),
-            targetValue: Number.parseInt(indicatorForm.targetValue),
-            unit: indicatorForm.unit,
-            lastUpdated: new Date().toISOString().split("T")[0],
-            trend: "stable",
-          },
-        ])
-      }
+  const projectIndicators = (indicators as Indicator[]).filter((i) => i.project_id === selectedProject)
+
+  const validateIndicatorForm = () => {
+    const errors: Record<string, string> = {}
+
+    if (!indicatorForm.name.trim()) errors.name = "Indicator name is required"
+    if (!indicatorForm.currentValue) errors.currentValue = "Current value is required"
+    if (!indicatorForm.targetValue) errors.targetValue = "Target value is required"
+    if (Number(indicatorForm.targetValue) <= 0) errors.targetValue = "Target must be greater than 0"
+    if (!indicatorForm.unit.trim()) errors.unit = "Unit is required"
+
+    setIndicatorErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const handleAddIndicator = async () => {
+    if (!validateIndicatorForm()) return
+
+    try {
+      const response = await fetch("/api/indicators", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: selectedProject,
+          name: indicatorForm.name,
+          description: indicatorForm.description,
+          current_value: Number(indicatorForm.currentValue),
+          target_value: Number(indicatorForm.targetValue),
+          unit: indicatorForm.unit,
+        }),
+      })
+
+      if (!response.ok) throw new Error("Failed to create indicator")
+
       setIndicatorForm({ name: "", description: "", currentValue: "", targetValue: "", unit: "" })
       setShowIndicatorForm(false)
+      setMessage({ type: "success", text: "Indicator created successfully" })
+      mutateIndicators()
+      setTimeout(() => setMessage(null), 3000)
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to create indicator" })
     }
   }
 
-  const handleEditIndicator = (indicator: Indicator) => {
-    setEditingIndicator(indicator)
-    setIndicatorForm({
-      name: indicator.name,
-      description: indicator.description,
-      currentValue: String(indicator.currentValue),
-      targetValue: String(indicator.targetValue),
-      unit: indicator.unit,
-    })
-    setShowIndicatorForm(true)
-  }
+  const handleDeleteIndicator = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this indicator?")) return
 
-  const handleDeleteIndicator = (id: number) => {
-    setIndicators(indicators.filter((i) => i.id !== id))
+    try {
+      const response = await fetch(`/api/indicators/${id}`, { method: "DELETE" })
+      if (!response.ok) throw new Error("Failed to delete indicator")
+
+      setMessage({ type: "success", text: "Indicator deleted successfully" })
+      mutateIndicators()
+      setTimeout(() => setMessage(null), 3000)
+    } catch (err) {
+      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to delete indicator" })
+    }
   }
 
   const getTrendIcon = (trend: string) => {
@@ -204,6 +156,19 @@ export function ProjectManagerDashboard() {
           </Button>
         </div>
 
+        {message && (
+          <div
+            className={`mb-6 p-4 rounded border flex items-center gap-2 ${
+              message.type === "success"
+                ? "bg-green-900/20 border-green-700 text-green-200"
+                : "bg-red-900/20 border-red-700 text-red-200"
+            }`}
+          >
+            {message.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+            {message.text}
+          </div>
+        )}
+
         <Tabs defaultValue="indicators" className="w-full">
           <TabsList className="bg-slate-800 border-b border-slate-700">
             <TabsTrigger value="indicators" className="text-white data-[state=active]:bg-slate-700">
@@ -220,22 +185,28 @@ export function ProjectManagerDashboard() {
               {/* Project Selector */}
               <Card className="bg-slate-800 border-slate-700 p-6">
                 <h2 className="text-lg font-semibold text-white mb-4">Select Project</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {projects.map((project) => (
-                    <button
-                      key={project.id}
-                      onClick={() => setSelectedProject(project.id)}
-                      className={`p-4 rounded border-2 text-left transition-all ${
-                        selectedProject === project.id
-                          ? "bg-blue-900 border-blue-500"
-                          : "bg-slate-700 border-slate-600 hover:border-slate-500"
-                      }`}
-                    >
-                      <h3 className="font-semibold text-white">{project.name}</h3>
-                      <p className="text-sm text-slate-400">{project.description}</p>
-                    </button>
-                  ))}
-                </div>
+                {projectsLoading ? (
+                  <div className="text-center py-4 text-slate-400">Loading projects...</div>
+                ) : (projects as Project[]).length === 0 ? (
+                  <div className="text-center py-4 text-slate-400">No projects assigned</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {(projects as Project[]).map((project) => (
+                      <button
+                        key={project.id}
+                        onClick={() => setSelectedProject(project.id)}
+                        className={`p-4 rounded border-2 text-left transition-all ${
+                          selectedProject === project.id
+                            ? "bg-blue-900 border-blue-500"
+                            : "bg-slate-700 border-slate-600 hover:border-slate-500"
+                        }`}
+                      >
+                        <h3 className="font-semibold text-white">{project.name}</h3>
+                        <p className="text-sm text-slate-400">{project.description}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </Card>
 
               {/* Indicators List */}
@@ -256,46 +227,69 @@ export function ProjectManagerDashboard() {
 
                 {showIndicatorForm && (
                   <div className="mb-6 p-4 bg-slate-700 rounded space-y-3 border border-slate-600">
-                    <Input
-                      type="text"
-                      value={indicatorForm.name}
-                      onChange={(e) => setIndicatorForm({ ...indicatorForm, name: e.target.value })}
-                      placeholder="Indicator name"
-                      className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
-                    />
-                    <textarea
-                      value={indicatorForm.description}
-                      onChange={(e) => setIndicatorForm({ ...indicatorForm, description: e.target.value })}
-                      placeholder="Description"
-                      className="w-full bg-slate-600 border border-slate-500 text-white placeholder-slate-400 rounded px-3 py-2"
-                      rows={2}
-                    />
-                    <div className="grid grid-cols-3 gap-3">
-                      <Input
-                        type="number"
-                        value={indicatorForm.currentValue}
-                        onChange={(e) => setIndicatorForm({ ...indicatorForm, currentValue: e.target.value })}
-                        placeholder="Current value"
-                        className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
-                      />
-                      <Input
-                        type="number"
-                        value={indicatorForm.targetValue}
-                        onChange={(e) => setIndicatorForm({ ...indicatorForm, targetValue: e.target.value })}
-                        placeholder="Target value"
-                        className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
-                      />
+                    <div>
                       <Input
                         type="text"
-                        value={indicatorForm.unit}
-                        onChange={(e) => setIndicatorForm({ ...indicatorForm, unit: e.target.value })}
-                        placeholder="Unit (e.g., students)"
+                        value={indicatorForm.name}
+                        onChange={(e) => setIndicatorForm({ ...indicatorForm, name: e.target.value })}
+                        placeholder="Indicator name"
                         className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
                       />
+                      {indicatorErrors.name && <p className="text-red-400 text-xs mt-1">{indicatorErrors.name}</p>}
                     </div>
+
+                    <div>
+                      <textarea
+                        value={indicatorForm.description}
+                        onChange={(e) => setIndicatorForm({ ...indicatorForm, description: e.target.value })}
+                        placeholder="Description"
+                        className="w-full bg-slate-600 border border-slate-500 text-white placeholder-slate-400 rounded px-3 py-2"
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <Input
+                          type="number"
+                          value={indicatorForm.currentValue}
+                          onChange={(e) => setIndicatorForm({ ...indicatorForm, currentValue: e.target.value })}
+                          placeholder="Current value"
+                          className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
+                        />
+                        {indicatorErrors.currentValue && (
+                          <p className="text-red-400 text-xs mt-1">{indicatorErrors.currentValue}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Input
+                          type="number"
+                          value={indicatorForm.targetValue}
+                          onChange={(e) => setIndicatorForm({ ...indicatorForm, targetValue: e.target.value })}
+                          placeholder="Target value"
+                          className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
+                        />
+                        {indicatorErrors.targetValue && (
+                          <p className="text-red-400 text-xs mt-1">{indicatorErrors.targetValue}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Input
+                          type="text"
+                          value={indicatorForm.unit}
+                          onChange={(e) => setIndicatorForm({ ...indicatorForm, unit: e.target.value })}
+                          placeholder="Unit (e.g., students)"
+                          className="bg-slate-600 border-slate-500 text-white placeholder-slate-400"
+                        />
+                        {indicatorErrors.unit && <p className="text-red-400 text-xs mt-1">{indicatorErrors.unit}</p>}
+                      </div>
+                    </div>
+
                     <div className="flex gap-2">
                       <Button onClick={handleAddIndicator} className="bg-green-600 hover:bg-green-700">
-                        {editingIndicator ? "Update" : "Create"}
+                        Create
                       </Button>
                       <Button
                         onClick={() => {
@@ -310,8 +304,17 @@ export function ProjectManagerDashboard() {
                   </div>
                 )}
 
+                {indicatorsError && (
+                  <div className="mb-4 p-4 bg-red-900/20 border border-red-700 text-red-200 rounded flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Failed to load indicators
+                  </div>
+                )}
+
                 <div className="space-y-4">
-                  {projectIndicators.length === 0 ? (
+                  {indicatorsLoading ? (
+                    <div className="text-center py-8 text-slate-400">Loading indicators...</div>
+                  ) : projectIndicators.length === 0 ? (
                     <p className="text-slate-400 text-center py-8">No indicators for this project yet</p>
                   ) : (
                     projectIndicators.map((indicator) => {
@@ -328,20 +331,12 @@ export function ProjectManagerDashboard() {
                               </div>
                               <p className="text-sm text-slate-400">{indicator.description}</p>
                             </div>
-                            <div className="flex gap-2">
-                              <Button
-                                onClick={() => handleEditIndicator(indicator)}
-                                className="bg-blue-600 hover:bg-blue-700 text-xs"
-                              >
-                                Edit
-                              </Button>
-                              <Button
-                                onClick={() => handleDeleteIndicator(indicator.id)}
-                                className="bg-red-600 hover:bg-red-700 text-xs"
-                              >
-                                Delete
-                              </Button>
-                            </div>
+                            <Button
+                              onClick={() => handleDeleteIndicator(indicator.id)}
+                              className="bg-red-600 hover:bg-red-700 text-xs"
+                            >
+                              Delete
+                            </Button>
                           </div>
 
                           <div className="mb-3">
@@ -374,56 +369,64 @@ export function ProjectManagerDashboard() {
             <Card className="bg-slate-800 border-slate-700 p-6">
               <h2 className="text-2xl font-bold text-white mb-6">My Projects</h2>
               <div className="space-y-4">
-                {projects.map((project) => {
-                  const projectIndicators = indicators.filter((i) => i.projectId === project.id)
-                  const avgProgress =
-                    projectIndicators.length > 0
-                      ? Math.round(
-                          projectIndicators.reduce((sum, i) => sum + (i.currentValue / i.targetValue) * 100, 0) /
-                            projectIndicators.length,
-                        )
-                      : 0
+                {projectsLoading ? (
+                  <div className="text-center py-8 text-slate-400">Loading projects...</div>
+                ) : (projects as Project[]).length === 0 ? (
+                  <div className="text-center py-8 text-slate-400">No projects assigned</div>
+                ) : (
+                  (projects as Project[]).map((project) => {
+                    const projectIndicators = (indicators as Indicator[]).filter((i) => i.project_id === project.id)
+                    const avgProgress =
+                      projectIndicators.length > 0
+                        ? Math.round(
+                            projectIndicators.reduce((sum, i) => sum + (i.currentValue / i.targetValue) * 100, 0) /
+                              projectIndicators.length,
+                          )
+                        : 0
 
-                  return (
-                    <div key={project.id} className="bg-slate-700 p-4 rounded border border-slate-600">
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h3 className="font-semibold text-white text-lg">{project.name}</h3>
-                          <p className="text-sm text-slate-400">{project.description}</p>
+                    return (
+                      <div key={project.id} className="bg-slate-700 p-4 rounded border border-slate-600">
+                        <div className="flex justify-between items-start mb-3">
+                          <div>
+                            <h3 className="font-semibold text-white text-lg">{project.name}</h3>
+                            <p className="text-sm text-slate-400">{project.description}</p>
+                          </div>
+                          <span className="bg-blue-900 text-blue-200 px-3 py-1 rounded text-sm capitalize">
+                            {project.status?.replace("_", " ")}
+                          </span>
                         </div>
-                        <span className="bg-blue-900 text-blue-200 px-3 py-1 rounded text-sm">{project.status}</span>
-                      </div>
 
-                      <div className="grid grid-cols-3 gap-3 mb-3 text-sm">
-                        <div>
-                          <p className="text-slate-400">Start Date</p>
-                          <p className="text-white font-semibold">{project.startDate}</p>
+                        <div className="grid grid-cols-3 gap-3 mb-3 text-sm">
+                          <div>
+                            <p className="text-slate-400">Start Date</p>
+                            <p className="text-white font-semibold">{project.start_date}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400">End Date</p>
+                            <p className="text-white font-semibold">{project.end_date}</p>
+                          </div>
+                          <div>
+                            <p className="text-slate-400">Indicators</p>
+                            <p className="text-white font-semibold">{projectIndicators.length}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-slate-400">End Date</p>
-                          <p className="text-white font-semibold">{project.endDate}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-400">Indicators</p>
-                          <p className="text-white font-semibold">{projectIndicators.length}</p>
-                        </div>
-                      </div>
 
-                      <div>
-                        <div className="flex justify-between text-sm text-slate-400 mb-1">
-                          <span>Overall Progress</span>
-                          <span>{avgProgress}%</span>
-                        </div>
-                        <div className="w-full bg-slate-600 rounded-full h-2">
-                          <div
-                            className="bg-gradient-to-r from-green-500 to-green-400 h-2 rounded-full"
-                            style={{ width: `${avgProgress}%` }}
-                          />
+                        <div>
+                          <div className="flex justify-between text-sm text-slate-400 mb-1">
+                            <span>Overall Progress</span>
+                            <span>{avgProgress}%</span>
+                          </div>
+                          <div className="w-full bg-slate-600 rounded-full h-2">
+                            <div
+                              className="bg-gradient-to-r from-green-500 to-green-400 h-2 rounded-full"
+                              style={{ width: `${avgProgress}%` }}
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )
-                })}
+                    )
+                  })
+                )}
               </div>
             </Card>
           </TabsContent>

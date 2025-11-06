@@ -1,17 +1,18 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void
 }
 
 export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
+  const { register, loading } = useAuth()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -21,7 +22,6 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
   })
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
-  const [loading, setLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -32,39 +32,18 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     e.preventDefault()
     setError("")
     setSuccess("")
-    setLoading(true)
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
-      setLoading(false)
       return
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          fullName: formData.fullName,
-          role: formData.role,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "Registration failed")
-        return
-      }
-
+      await register(formData.email, formData.password, formData.fullName, formData.role)
       setSuccess("Registration successful! Please sign in.")
       setTimeout(() => onSwitchToLogin(), 2000)
     } catch (err) {
-      setError("An error occurred. Please try again.")
-    } finally {
-      setLoading(false)
+      setError(err instanceof Error ? err.message : "An error occurred. Please try again.")
     }
   }
 

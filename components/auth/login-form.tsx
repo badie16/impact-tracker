@@ -1,59 +1,30 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 interface LoginFormProps {
   onSwitchToRegister: () => void
 }
 
 export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
-  const router = useRouter()
+  const { login, loading } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
-    setLoading(true)
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || "Login failed")
-        return
-      }
-
-      // Store token and redirect based on role
-      localStorage.setItem("token", data.token)
-      localStorage.setItem("role", data.role)
-      localStorage.setItem("userId", data.userId)
-
-      const dashboardMap: Record<string, string> = {
-        admin: "/admin",
-        project_manager: "/project-manager",
-        donor: "/donor",
-      }
-
-      router.push(dashboardMap[data.role] || "/dashboard")
+      await login(email, password)
     } catch (err) {
-      setError("An error occurred. Please try again.")
-    } finally {
-      setLoading(false)
+      setError(err instanceof Error ? err.message : "An error occurred. Please try again.")
     }
   }
 
