@@ -21,7 +21,7 @@ ImpactTracker enables organizations to:
 
 ## Project Structure
 
-\`\`\`
+```
 ├── app/
 │   ├── api/                    # API routes for CRUD operations
 │   │   ├── auth/              # Authentication endpoints
@@ -41,7 +41,7 @@ ImpactTracker enables organizations to:
 │   ├── supabase/            # Supabase client utilities
 │   └── types.ts             # TypeScript type definitions
 └── middleware.ts            # Token refresh and auth protection
-\`\`\`
+```
 
 ## Getting Started
 
@@ -52,25 +52,25 @@ ImpactTracker enables organizations to:
 ### Installation
 
 1. **Install dependencies**
-   \`\`\`bash
+   ```bash
    npm install
    # or
    bun install
-   \`\`\`
+   ```
 
 2. **Set up environment variables** in Vercel or `.env.local`:
-   \`\`\`
+   ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-   \`\`\`
+   ```
 
 3. **Create database schema** in Supabase SQL editor (see SQL schema below)
 
 4. **Run development server**
-   \`\`\`bash
+   ```bash
    npm run dev
-   \`\`\`
+   ```
    Visit `http://localhost:3000`
 
 ## Database Schema
@@ -187,15 +187,15 @@ The application uses the following tables:
 ## Development
 
 ### Running Tests
-\`\`\`bash
+```bash
 npm test
-\`\`\`
+```
 
 ### Building for Production
-\`\`\`bash
+```bash
 npm run build
 npm start
-\`\`\`
+```
 
 ### Code Quality
 - TypeScript for type safety
@@ -226,9 +226,9 @@ npm start
 3. Add environment variables in Vercel dashboard
 4. Deploy
 
-\`\`\`bash
+```bash
 git push origin main
-\`\`\`
+```
 
 ## Troubleshooting
 
@@ -264,13 +264,6 @@ For issues or questions:
 1. Check existing issues on GitHub
 2. Create a new issue with detailed description
 3. Contact the development team
-
-## Roadmap
-
-- **Q1 2025**: Real-time notifications, advanced charts
-- **Q2 2025**: Mobile app, offline support
-- **Q3 2025**: AI-powered insights, automated reporting
-- **Q4 2025**: Multi-language support, advanced analytics
 
 ---
 
