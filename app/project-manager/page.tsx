@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ProjectManagerDashboard } from "@/components/dashboards/project-manager-dashboard"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { LoadingSpinner } from "@/components/LoadingSpinner"
+import  LoadingSpinner  from "@/components/LoadingSpinner"
 
 export default function ProjectManagerPage() {
   const router = useRouter()

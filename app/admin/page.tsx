@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { AdminDashboard } from "@/components/dashboards/admin-dashboard"
 import { useAuth } from "@/lib/hooks/use-auth"
-import { LoadingSpinner } from "@/components/LoadingSpinner"
+import  LoadingSpinner  from "@/components/LoadingSpinner"
 
 export default function AdminPage() {
   const router = useRouter()

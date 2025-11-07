@@ -5,12 +5,13 @@ import { LoginForm } from "@/components/auth/login-form"
 import { RegisterForm } from "@/components/auth/register-form"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { redirect } from "next/navigation"
+import LoadingSpinner from "@/components/LoadingSpinner"
 export default function Home() {
   const [isLogin, setIsLogin] = useState(true)
   const { user, loading } = useAuth()
   console.log("user", user)
   if (loading) {
-    return <div>Loading...</div>
+    return <LoadingSpinner></LoadingSpinner>
   }
   if (user) {
     const dashboardMap: Record<string, string> = {

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     // Vérification utilisateur
     const { data: { user }, error: userError } = await supabase.auth.getUser(token)
-    if (userError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })    
+    if (userError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     // Vérification rôle admin
     const { data: userProfile, error: profileError } = await supabase
       .from("users")
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       .eq("id", user.id)
       .single()
     if (profileError || !userProfile) return NextResponse.json({ error: "User profile not found" }, { status: 404 })
-    if (userProfile.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 })    
+    if (userProfile.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     // Récupérer les utilisateurs
     const { data, error } = await supabase
       .from("users")
