@@ -24,21 +24,21 @@ interface Indicator {
   project_id: string
   name: string
   description: string
-  currentValue: number
-  targetValue: number
+  current_value: number
+  target_value: number
   unit: string
-  lastUpdated: string
+  last_updated: string
   trend: "up" | "down" | "stable"
 }
 
 export function ProjectManagerDashboard() {
-  const { projects = [], loading: projectsLoading, error: projectsError } = useProjects()
+  const { projects = [], isLoading: projectsLoading, error: projectsError } = useProjects()
   const { logout } = useAuth()
   const {
     indicators = [],
-    loading: indicatorsLoading,
+    isLoading: indicatorsLoading,
     error: indicatorsError,
-    mutate: mutateIndicators,
+    mutateIndicators,
   } = useIndicators()
 
   const [selectedProject, setSelectedProject] = useState<string>("")
@@ -77,9 +77,15 @@ export function ProjectManagerDashboard() {
     if (!validateIndicatorForm()) return
 
     try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) throw new Error("No auth token found")
+
       const response = await fetch("/api/indicators", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           project_id: selectedProject,
           name: indicatorForm.name,
@@ -90,7 +96,8 @@ export function ProjectManagerDashboard() {
         }),
       })
 
-      if (!response.ok) throw new Error("Failed to create indicator")
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || "Failed to create indicator")
 
       setIndicatorForm({ name: "", description: "", currentValue: "", targetValue: "", unit: "" })
       setShowIndicatorForm(false)
@@ -98,9 +105,13 @@ export function ProjectManagerDashboard() {
       mutateIndicators()
       setTimeout(() => setMessage(null), 3000)
     } catch (err) {
-      setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to create indicator" })
+      setMessage({
+        type: "error",
+        text: err instanceof Error ? err.message : "Failed to create indicator",
+      })
     }
   }
+
 
   const handleDeleteIndicator = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this indicator?")) return
@@ -154,11 +165,10 @@ export function ProjectManagerDashboard() {
 
         {message && (
           <div
-            className={`mb-6 p-4 rounded border flex items-center gap-2 ${
-              message.type === "success"
+            className={`mb-6 p-4 rounded border flex items-center gap-2 ${message.type === "success"
                 ? "bg-green-900/20 border-green-700 text-green-200"
                 : "bg-red-900/20 border-red-700 text-red-200"
-            }`}
+              }`}
           >
             {message.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
             {message.text}
@@ -191,11 +201,10 @@ export function ProjectManagerDashboard() {
                       <button
                         key={project.id}
                         onClick={() => setSelectedProject(project.id)}
-                        className={`p-4 rounded border-2 text-left transition-all ${
-                          selectedProject === project.id
+                        className={`p-4 rounded border-2 text-left transition-all ${selectedProject === project.id
                             ? "bg-blue-900 border-blue-500"
                             : "bg-slate-700 border-slate-600 hover:border-slate-500"
-                        }`}
+                          }`}
                       >
                         <h3 className="font-semibold text-white">{project.name}</h3>
                         <p className="text-sm text-slate-400">{project.description}</p>
@@ -314,7 +323,8 @@ export function ProjectManagerDashboard() {
                     <p className="text-slate-400 text-center py-8">No indicators for this project yet</p>
                   ) : (
                     projectIndicators.map((indicator) => {
-                      const progress = (indicator.currentValue / indicator.targetValue) * 100
+                      console.log(indicator)
+                      const progress = (indicator.current_value / indicator.target_value) * 100
                       return (
                         <div key={indicator.id} className="bg-slate-700 p-4 rounded border border-slate-600">
                           <div className="flex justify-between items-start mb-3">
@@ -338,7 +348,7 @@ export function ProjectManagerDashboard() {
                           <div className="mb-3">
                             <div className="flex justify-between text-sm text-slate-400 mb-1">
                               <span>
-                                {indicator.currentValue} / {indicator.targetValue} {indicator.unit}
+                                {indicator.current_value} / {indicator.target_value} {indicator.unit}
                               </span>
                               <span>{Math.round(progress)}%</span>
                             </div>
@@ -350,7 +360,9 @@ export function ProjectManagerDashboard() {
                             </div>
                           </div>
 
-                          <p className="text-xs text-slate-400">Last updated: {indicator.lastUpdated}</p>
+                          <p className="text-xs text-slate-400">
+                            Last updated: {indicator.last_updated ? new Date(indicator.last_updated).toLocaleString() : "N/A"}
+                          </p>
                         </div>
                       )
                     })
@@ -375,9 +387,9 @@ export function ProjectManagerDashboard() {
                     const avgProgress =
                       projectIndicators.length > 0
                         ? Math.round(
-                            projectIndicators.reduce((sum, i) => sum + (i.currentValue / i.targetValue) * 100, 0) /
-                              projectIndicators.length,
-                          )
+                          projectIndicators.reduce((sum, i) => sum + (i.current_value / i.target_value) * 100, 0) /
+                          projectIndicators.length,
+                        )
                         : 0
 
                     return (

@@ -32,8 +32,8 @@ interface Indicator {
 }
 
 export function DonorDashboard() {
-  const { projects = [], loading: projectsLoading, error: projectsError } = useProjects()
-  const { indicators = [], loading: indicatorsLoading, error: indicatorsError } = useIndicators()
+  const { projects = [], isLoading: projectsLoading, error: projectsError } = useProjects()
+  const { indicators = [], isLoading: indicatorsLoading, error: indicatorsError } = useIndicators()
   const { logout } = useAuth()
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")

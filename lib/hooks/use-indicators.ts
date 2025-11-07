@@ -85,5 +85,6 @@ export function useIndicators(projectId?: string) {
     createIndicator,
     updateIndicator,
     deleteIndicator,
+    mutateIndicators: mutate,
   }
 }
