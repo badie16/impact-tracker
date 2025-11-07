@@ -5,25 +5,28 @@ import type { User } from "@/lib/types"
 
 const fetcher = async (url: string) => {
   const token = localStorage.getItem("auth_token")
+  if (!token) throw new Error("No auth token found")
 
   const res = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   })
 
-  if (!res.ok) {
-    throw new Error("Failed to fetch users")
-  }
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.error || "Failed to fetch users")
 
-  return res.json()
+  return data
 }
+
 
 export function useUsers() {
   const { data, error, isLoading, mutate } = useSWR("/api/users", fetcher)
 
   const updateUser = async (id: string, updates: Partial<User>) => {
     const token = localStorage.getItem("auth_token")
+    if (!token) throw new Error("No auth token found")
 
     const response = await fetch("/api/users", {
       method: "PUT",

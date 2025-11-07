@@ -150,8 +150,16 @@ export function AdminDashboard() {
     if (!window.confirm("Are you sure you want to delete this project?")) return
 
     try {
-      const response = await fetch(`/api/projects/${id}`, { method: "DELETE" })
-      if (!response.ok) throw new Error("Failed to delete project")
+      const token = localStorage.getItem("auth_token")
+      const response = await fetch(`/api/projects/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || "Failed to delete project")
 
       setMessage({ type: "success", text: "Project deleted successfully" })
       mutateProjects()
@@ -160,6 +168,7 @@ export function AdminDashboard() {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to delete project" })
     }
   }
+
 
   const handleDeleteUser = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return
