@@ -46,5 +46,6 @@ export function useUsers() {
     isLoading,
     error,
     updateUser,
+    mutateUsers: mutate,
   }
 }

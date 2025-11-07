@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useProjects } from "@/lib/hooks/use-projects"
 import { useIndicators } from "@/lib/hooks/use-indicators"
 import { AlertCircle, CheckCircle2 } from "lucide-react"
+import { useAuth } from "@/lib/hooks/use-auth"
 
 interface Project {
   id: string
@@ -32,6 +33,7 @@ interface Indicator {
 
 export function ProjectManagerDashboard() {
   const { projects = [], loading: projectsLoading, error: projectsError } = useProjects()
+  const { logout } = useAuth()
   const {
     indicators = [],
     loading: indicatorsLoading,
@@ -145,13 +147,7 @@ export function ProjectManagerDashboard() {
             <h1 className="text-4xl font-bold text-white">Project Manager Dashboard</h1>
             <p className="text-slate-400 mt-2">Track and update project indicators</p>
           </div>
-          <Button
-            onClick={() => {
-              localStorage.clear()
-              window.location.href = "/"
-            }}
-            className="bg-red-600 hover:bg-red-700"
-          >
+          <Button onClick={logout} variant="destructive" className="gap-2 bg-red-500">
             Logout
           </Button>
         </div>

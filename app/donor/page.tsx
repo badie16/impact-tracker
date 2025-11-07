@@ -1,32 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { DonorDashboard } from "@/components/dashboards/donor-dashboard"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
 
 export default function DonorPage() {
-  const router = useRouter()
-  const [isAuthorized, setIsAuthorized] = useState(false)
+  const router = useRouter()  
+  const { user, loading } = useAuth()
 
   useEffect(() => {
-    const userDataString = localStorage.getItem("user_data");
-    let role: string | undefined;
-    if (userDataString) {
-      try {
-        const userData = JSON.parse(userDataString);
-        role = userData?.role;
-      } catch {
-        role = undefined;
-      }
-    }
-    if (role !== "donor") {
+    if (!loading && (!user || user.role !== "donor")) {
       router.push("/")
-    } else {
-      setIsAuthorized(true)
     }
-  }, [router])
+  }, [user, loading, router])
 
-  if (!isAuthorized) return null
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  if (!user || user.role !== "donor") {
+    return null
+  }
 
   return <DonorDashboard />
 }

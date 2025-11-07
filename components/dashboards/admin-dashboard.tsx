@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useProjects } from "@/lib/hooks/use-projects"
 import { useUsers } from "@/lib/hooks/use-users"
+import { useAuth } from "@/lib/hooks/use-auth"
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react"
 
 interface Project {
@@ -30,9 +31,9 @@ interface User {
 }
 
 export function AdminDashboard() {
-  const { projects = [], loading: projectsLoading, error: projectsError, mutate: mutateProjects } = useProjects()
-  const { users = [], loading: usersLoading, error: usersError, mutate: mutateUsers } = useUsers()
-
+  const { projects = [], isLoading: projectsLoading, error: projectsError, createProject, updateProject, deleteProject, mutateProjects } = useProjects()
+  const { users = [], isLoading: usersLoading, error: usersError, updateUser, mutateUsers } = useUsers()
+  const { logout } = useAuth()
   const [showProjectForm, setShowProjectForm] = useState(false)
   const [showUserForm, setShowUserForm] = useState(false)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
@@ -85,12 +86,16 @@ export function AdminDashboard() {
   }
 
   const handleAddProject = async () => {
+    const token = localStorage.getItem("auth_token")
     if (!validateProjectForm()) return
 
     try {
       const response = await fetch("/api/projects", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
           name: projectForm.name,
           description: projectForm.description,
@@ -100,7 +105,8 @@ export function AdminDashboard() {
         }),
       })
 
-      if (!response.ok) throw new Error("Failed to create project")
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || "Failed to create project")
 
       setProjectForm({ name: "", description: "", budget: "", startDate: "", endDate: "" })
       setShowProjectForm(false)
@@ -111,6 +117,8 @@ export function AdminDashboard() {
       setMessage({ type: "error", text: err instanceof Error ? err.message : "Failed to create project" })
     }
   }
+
+
 
   const handleAddUser = async () => {
     if (!validateUserForm()) return
@@ -180,24 +188,17 @@ export function AdminDashboard() {
             <h1 className="text-4xl font-bold text-white">Admin Dashboard</h1>
             <p className="text-slate-400 mt-2">Manage projects and users</p>
           </div>
-          <Button
-            onClick={() => {
-              localStorage.clear()
-              window.location.href = "/"
-            }}
-            className="bg-red-600 hover:bg-red-700"
-          >
+          <Button onClick={logout} variant="destructive" className="gap-2 bg-red-500">
             Logout
           </Button>
         </div>
 
         {message && (
           <div
-            className={`mb-6 p-4 rounded border flex items-center gap-2 ${
-              message.type === "success"
-                ? "bg-green-900/20 border-green-700 text-green-200"
-                : "bg-red-900/20 border-red-700 text-red-200"
-            }`}
+            className={`mb-6 p-4 rounded border flex items-center gap-2 ${message.type === "success"
+              ? "bg-green-900/20 border-green-700 text-green-200"
+              : "bg-red-900/20 border-red-700 text-red-200"
+              }`}
           >
             {message.type === "success" ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
             {message.text}

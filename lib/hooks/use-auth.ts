@@ -15,17 +15,29 @@ interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true) // ✅ default true
 
   useEffect(() => {
-    console.log("chicking for user")
-    // Check if user is logged in
-    const token = localStorage.getItem("auth_token")
-    const userData = localStorage.getItem("user_data")
-    if (token && userData) {
-      setUser(JSON.parse(userData))
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          credentials: "include",
+        })
 
+        if (response.ok) {
+          const userData = await response.json()
+          setUser(userData)
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error("Failed to fetch user:", error)
+      } finally {
+        setLoading(false)
+      }
     }
+
+    fetchUser()
   }, [])
 
   const login = async (email: string, password: string) => {
@@ -34,27 +46,24 @@ export function useAuth(): UseAuthReturn {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       })
 
       const data = await response.json()
-      console.log("login data", data)
+
       if (!response.ok) {
         throw new Error(data.error || "Login failed")
       }
 
-      localStorage.setItem("auth_token", data.token)
-      localStorage.setItem("refresh_token", data.refreshToken)
-      localStorage.setItem("user_data", JSON.stringify(data.user))
-
       setUser(data.user)
 
-      // Redirect based on role
       const dashboardMap: Record<string, string> = {
         admin: "/admin",
         project_manager: "/project-manager",
         donor: "/donor",
       }
+
       const redirectPath = dashboardMap[data.user.role] || "/dashboard"
       router.push(redirectPath)
     } catch (error) {
@@ -86,19 +95,15 @@ export function useAuth(): UseAuthReturn {
   }
 
   const logout = async () => {
-    // Clear localStorage
-    localStorage.removeItem("auth_token")
-    localStorage.removeItem("refresh_token")
-    localStorage.removeItem("user_data")
     setUser(null)
-
-    // Clear cookies via API
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      })
     } catch (error) {
       console.error("Logout error:", error)
     }
-
     router.push("/")
   }
 

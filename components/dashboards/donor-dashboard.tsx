@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { useProjects } from "@/lib/hooks/use-projects"
 import { useIndicators } from "@/lib/hooks/use-indicators"
-import { AlertCircle, Loader2 } from "lucide-react"
+import { AlertCircle, Loader2 } from "lucide-react" 
+import { useAuth } from "@/lib/hooks/use-auth"
 
 interface Project {
   id: string
@@ -16,7 +17,7 @@ interface Project {
   progress?: number
   budget: number
   spent: number
-  status: "active" | "completed" | "on_hold"
+  status: "active" | "completed" | "on_hold"  
   start_date: string
   end_date: string
 }
@@ -33,7 +34,7 @@ interface Indicator {
 export function DonorDashboard() {
   const { projects = [], loading: projectsLoading, error: projectsError } = useProjects()
   const { indicators = [], loading: indicatorsLoading, error: indicatorsError } = useIndicators()
-
+  const { logout } = useAuth()
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [searchTerm, setSearchTerm] = useState("")
@@ -83,13 +84,7 @@ export function DonorDashboard() {
             <h1 className="text-4xl font-bold text-white">Donor Dashboard</h1>
             <p className="text-slate-400 mt-2">Track the impact of your donations</p>
           </div>
-          <Button
-            onClick={() => {
-              localStorage.clear()
-              window.location.href = "/"
-            }}
-            className="bg-red-600 hover:bg-red-700"
-          >
+          <Button onClick={logout} variant="destructive" className="gap-2 bg-red-500">
             Logout
           </Button>
         </div>

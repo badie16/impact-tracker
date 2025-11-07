@@ -1,32 +1,28 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ProjectManagerDashboard } from "@/components/dashboards/project-manager-dashboard"
+import { useAuth } from "@/lib/hooks/use-auth"
+import { LoadingSpinner } from "@/components/LoadingSpinner"
 
 export default function ProjectManagerPage() {
   const router = useRouter()
-  const [isAuthorized, setIsAuthorized] = useState(false)
+  const { user, loading } = useAuth()
 
   useEffect(() => {
-    const userDataString = localStorage.getItem("user_data");
-    let role: string | undefined;
-    if (userDataString) {
-      try {
-        const userData = JSON.parse(userDataString);
-        role = userData?.role;
-      } catch {
-        role = undefined;
-      }
-    }
-    if (role !== "project_manager") {
+    if (!loading && (!user || user.role !== "project_manager")) {
       router.push("/")
-    } else {
-      setIsAuthorized(true)
     }
-  }, [router])
+  }, [user, loading, router])
 
-  if (!isAuthorized) return null
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  if (!user || user.role !== "project_manager") {
+    return null
+  }
 
   return <ProjectManagerDashboard />
 }
