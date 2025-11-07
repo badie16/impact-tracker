@@ -7,17 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { useProjects } from "@/lib/hooks/use-projects"
 import { useIndicators } from "@/lib/hooks/use-indicators"
-import { AlertCircle, Loader2 } from "lucide-react" 
+import { AlertCircle, Loader2 } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 
 interface Project {
   id: string
   name: string
   description: string
-  progress?: number
   budget: number
   spent: number
-  status: "active" | "completed" | "on_hold"  
+  status: "active" | "completed" | "on_hold"
   start_date: string
   end_date: string
 }
@@ -26,11 +25,11 @@ interface Indicator {
   id: string
   project_id: string
   name: string
-  value: number
-  target: number
+  current_value: number
+  target_value: number
   unit: string
+  trend: "up" | "down" | "stable"
 }
-
 export function DonorDashboard() {
   const { projects = [], isLoading: projectsLoading, error: projectsError } = useProjects()
   const { indicators = [], isLoading: indicatorsLoading, error: indicatorsError } = useIndicators()
@@ -49,15 +48,31 @@ export function DonorDashboard() {
   })
 
   if (!selectedProject && filteredProjects.length > 0) {
-    setSelectedProject(filteredProjects[0])
-  }
 
+    setSelectedProject(filteredProjects[0])
+
+  }
+  const getProjectIndicators = (projectId: string) => {
+    return (indicators as Indicator[]).filter((i) => i.project_id === projectId)
+  }
+  const getProgressProject = (projectId: string) => {
+    const projectIndicators = getProjectIndicators(projectId)
+    if (projectIndicators.length === 0) return 0
+    const totalProgress = projectIndicators.reduce((sum, indicator) => {
+      if (indicator.target_value > 0) {
+        return sum + (indicator.current_value / indicator.target_value) * 100
+      }
+      return sum
+    }, 0)
+    return Math.round(totalProgress / projectIndicators.length)
+  }
   const totalBudget = filteredProjects.reduce((sum, p) => sum + (p.budget || 0), 0)
   const totalSpent = filteredProjects.reduce((sum, p) => sum + (p.spent || 0), 0)
   const avgProgress =
     filteredProjects.length > 0
-      ? Math.round(filteredProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / filteredProjects.length)
+      ? Math.round(filteredProjects.reduce((sum, p) => sum + (getProgressProject(p.id) || 0), 0) / filteredProjects.length)
       : 0
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -72,9 +87,8 @@ export function DonorDashboard() {
     }
   }
 
-  const getProjectIndicators = (projectId: string) => {
-    return (indicators as Indicator[]).filter((i) => i.project_id === projectId)
-  }
+  
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-8">
@@ -135,17 +149,15 @@ export function DonorDashboard() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setViewMode("grid")}
-                    className={`px-3 py-1 rounded text-sm ${
-                      viewMode === "grid" ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                    }`}
+                    className={`px-3 py-1 rounded text-sm ${viewMode === "grid" ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                      }`}
                   >
                     Grid
                   </button>
                   <button
                     onClick={() => setViewMode("list")}
-                    className={`px-3 py-1 rounded text-sm ${
-                      viewMode === "list" ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                    }`}
+                    className={`px-3 py-1 rounded text-sm ${viewMode === "list" ? "bg-blue-600 text-white" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                      }`}
                   >
                     List
                   </button>
@@ -165,11 +177,10 @@ export function DonorDashboard() {
                     <button
                       key={status}
                       onClick={() => setStatusFilter(status)}
-                      className={`px-3 py-1 rounded text-sm capitalize ${
-                        statusFilter === status
+                      className={`px-3 py-1 rounded text-sm capitalize ${statusFilter === status
                           ? "bg-blue-600 text-white"
                           : "bg-slate-600 text-slate-400 hover:bg-slate-500"
-                      }`}
+                        }`}
                     >
                       {status === "on_hold" ? "On Hold" : status}
                     </button>
@@ -195,11 +206,10 @@ export function DonorDashboard() {
                       <button
                         key={project.id}
                         onClick={() => setSelectedProject(project)}
-                        className={`p-4 rounded border-2 text-left transition-all ${
-                          selectedProject?.id === project.id
+                        className={`p-4 rounded border-2 text-left transition-all ${selectedProject?.id === project.id
                             ? "bg-blue-900 border-blue-500"
                             : "bg-slate-700 border-slate-600 hover:border-slate-500"
-                        }`}
+                          }`}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-semibold text-white">{project.name}</h3>
@@ -211,12 +221,12 @@ export function DonorDashboard() {
                         <div className="mb-2">
                           <div className="flex justify-between text-xs text-slate-400 mb-1">
                             <span>Progress</span>
-                            <span>{project.progress || 0}%</span>
+                            <span>{getProgressProject(project.id) || 0}%</span>
                           </div>
                           <div className="w-full bg-slate-600 rounded-full h-2">
                             <div
                               className="bg-gradient-to-r from-green-500 to-green-400 h-2 rounded-full"
-                              style={{ width: `${project.progress || 0}%` }}
+                              style={{ width: `${getProgressProject(project.id) || 0}%` }}
                             />
                           </div>
                         </div>
@@ -245,11 +255,10 @@ export function DonorDashboard() {
                       <button
                         key={project.id}
                         onClick={() => setSelectedProject(project)}
-                        className={`w-full p-4 rounded border-2 text-left transition-all ${
-                          selectedProject?.id === project.id
+                        className={`w-full p-4 rounded border-2 text-left transition-all ${selectedProject?.id === project.id
                             ? "bg-blue-900 border-blue-500"
                             : "bg-slate-700 border-slate-600 hover:border-slate-500"
-                        }`}
+                          }`}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>
@@ -263,7 +272,7 @@ export function DonorDashboard() {
                         <div className="grid grid-cols-5 gap-4 text-sm">
                           <div>
                             <p className="text-slate-400">Progress</p>
-                            <p className="text-white font-semibold">{project.progress || 0}%</p>
+                            <p className="text-white font-semibold">{getProgressProject(project.id) || 0}%</p>
                           </div>
                           <div>
                             <p className="text-slate-400">Budget</p>
@@ -323,19 +332,19 @@ export function DonorDashboard() {
                     </div>
                     <div className="bg-slate-700 p-4 rounded">
                       <p className="text-slate-400 text-sm mb-1">Progress</p>
-                      <p className="text-2xl font-bold text-white">{selectedProject.progress || 0}%</p>
+                      <p className="text-2xl font-bold text-white">{getProgressProject(selectedProject.id) || 0}%</p>
                     </div>
                   </div>
 
                   <div>
                     <div className="flex justify-between text-sm text-slate-400 mb-2">
                       <span>Overall Progress</span>
-                      <span>{selectedProject.progress || 0}%</span>
+                      <span>{getProgressProject(selectedProject.id) || 0}%</span>
                     </div>
                     <div className="w-full bg-slate-700 rounded-full h-4">
                       <div
                         className="bg-gradient-to-r from-green-500 via-green-400 to-emerald-400 h-4 rounded-full transition-all"
-                        style={{ width: `${selectedProject.progress || 0}%` }}
+                        style={{ width: `${getProgressProject(selectedProject.id) || 0}%` }}
                       />
                     </div>
                   </div>
@@ -359,7 +368,7 @@ export function DonorDashboard() {
                         {Math.round(
                           (new Date(selectedProject.end_date).getTime() -
                             new Date(selectedProject.start_date).getTime()) /
-                            (1000 * 60 * 60 * 24 * 30),
+                          (1000 * 60 * 60 * 24 * 30),
                         )}{" "}
                         months
                       </p>
@@ -378,12 +387,12 @@ export function DonorDashboard() {
                         <div className="text-slate-400 text-sm">No indicators for this project</div>
                       ) : (
                         getProjectIndicators(selectedProject.id).map((indicator) => {
-                          const progress = (indicator.value / indicator.target) * 100
+                          const progress = (indicator.current_value / indicator.target_value) * 100
                           return (
                             <div key={indicator.id} className="bg-slate-700 p-4 rounded border border-slate-600">
                               <p className="text-slate-400 text-sm mb-2">{indicator.name}</p>
                               <p className="text-2xl font-bold text-white mb-2">
-                                {indicator.value} / {indicator.target}
+                                {indicator.current_value} / {indicator.target_value}
                               </p>
                               <p className="text-xs text-slate-400 mb-2">{indicator.unit}</p>
                               <div className="w-full bg-slate-600 rounded-full h-2">
