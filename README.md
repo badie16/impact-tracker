@@ -1,249 +1,304 @@
-# ImpactTracker - NGO Project Management Platform
+# ImpactTracker - NGO Project Impact Management Portal
 
-A comprehensive web application for managing NGO projects, tracking impact indicators, and managing stakeholders (Admins, Project Managers, Donors).
+A modern, full-stack web application for NGOs to track project progress, manage indicators, and provide transparency to donors. Built with Next.js 16, React 19, and PostgreSQL.
 
 ## Overview
 
-ImpactTracker enables organizations to:
-- **Manage Projects**: Create, track, and manage development projects
-- **Track Indicators**: Define and update key performance indicators for projects
-- **Manage Stakeholders**: Handle admin, project manager, and donor user roles
-- **Monitor Impact**: Visualize project progress and financial metrics
+ImpactTracker streamlines how NGOs report on project impact. It eliminates manual Excel tracking by providing:
+- **Admins:** Full control over projects and user management
+- **Project Managers:** Real-time indicator creation and updates
+- **Donors:** Transparent, read-only access to project progress
+
+## Key Features
+
+### Authentication & Security
+- Role-based access control (Admin, Project Manager, Donor)
+- JWT token-based authentication
+- Secure httpOnly cookie storage
+- Email/password authentication
+
+### Admin Dashboard
+- Create and manage projects
+- Manage user accounts and roles
+- Monitor project budget and spending
+- View all indicators across projects
+
+### Project Manager Dashboard
+- View assigned projects
+- Create and update project indicators
+- Track indicator trends (up/down/stable)
+- Real-time project progress updates
+
+### Donor Dashboard
+- View funded projects
+- Monitor project progress indicators
+- Track budget utilization
+- Read-only transparent reporting
 
 ## Tech Stack
 
-- **Frontend**: Next.js 16 with React 19
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth with JWT
-- **Styling**: Tailwind CSS v4 with shadcn/ui
-- **Data Fetching**: SWR for client-side caching
-- **Icons**: Lucide React
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| **Frontend** | Next.js | 16 |
+| **UI Library** | React | 19 |
+| **Styling** | Tailwind CSS | v4 |
+| **Database** | PostgreSQL (Supabase) | 15+ |
+| **Auth** | Supabase Auth | - |
+| **Deployment** | Vercel | - |
 
 ## Project Structure
 
 ```
+impacttrackermain2/
 ├── app/
-│   ├── api/                    # API routes for CRUD operations
-│   │   ├── auth/              # Authentication endpoints
-│   │   ├── projects/          # Project management endpoints
-│   │   ├── indicators/        # Indicator management endpoints
-│   │   └── users/             # User management endpoints
-│   ├── admin/                 # Admin dashboard page
-│   ├── donor/                 # Donor dashboard page
-│   ├── project-manager/       # Project manager dashboard page
-│   └── page.tsx              # Landing/login page
+│   ├── layout.tsx              # Root layout
+│   ├── page.tsx                # Login/Register page
+│   ├── admin/
+│   │   └── page.tsx            # Admin dashboard
+│   ├── project-manager/
+│   │   └── page.tsx            # PM dashboard
+│   ├── donor/
+│   │   └── page.tsx            # Donor dashboard
+│   ├── api/
+│   │   ├── auth/
+│   │   │   ├── login/
+│   │   │   ├── register/
+│   │   │   ├── logout/
+│   │   │   └── me/
+│   │   ├── projects/
+│   │   │   └── route.ts        # Project CRUD
+│   │   ├── indicators/
+│   │   │   └── route.ts        # Indicator CRUD
+│   │   └── users/
+│   │       └── route.ts        # User management
+│   └── globals.css             # Global styles
 ├── components/
-│   ├── dashboards/           # Dashboard components
-│   ├── auth/                 # Authentication forms
-│   └── ui/                   # shadcn/ui components
+│   ├── auth/
+│   │   ├── login-form.tsx
+│   │   └── register-form.tsx
+│   ├── dashboards/
+│   │   ├── admin-dashboard.tsx
+│   │   ├── project-manager-dashboard.tsx
+│   │   └── donor-dashboard.tsx
+│   └── ui/                     # shadcn/ui components
 ├── lib/
-│   ├── hooks/               # Custom React hooks (useAuth, useProjects, etc.)
-│   ├── supabase/            # Supabase client utilities
-│   └── types.ts             # TypeScript type definitions
-└── middleware.ts            # Token refresh and auth protection
+│   ├── supabase/
+│   │   ├── server.ts          # Server-side client
+│   │   └── client.ts          # Client-side client
+│   └── hooks/
+│       └── use-auth.ts         # Auth hook
+├── public/                     # Static assets
+├── GOVERNANCE_REPORT.md        # Project governance & KPIs
+└── README.md                   # This file
 ```
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 18+ or Bun
-- Supabase account
+- Node.js 18+ and npm
+- Supabase project (for database & auth)
+- Vercel account (for deployment)
 
 ### Installation
 
-1. **Install dependencies**
+1. **Clone the project**
    ```bash
-   npm install
-   # or
-   bun install
+   # If you have the ZIP file
+   git clone https://github.com/badie16/impact-tracker
+   cd impact-tracker
    ```
 
-2. **Set up environment variables** in Vercel or `.env.local`:
+2. **Install dependencies**
+   ```bash
+   npm install
    ```
+
+3. **Configure environment variables**
+   
+   Create a `.env` file in the root directory:
+   ```env
+   # Supabase Configuration
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   
+   # For server-side operations
    SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
    ```
 
-3. **Create database schema** in Supabase SQL editor (see SQL schema below)
+4. **Set up the database**
+   
+   Create the following tables in Supabase SQL Editor :
+   Use file databse.sql
+   
 
-4. **Run development server**
+5. **Run the development server**
    ```bash
    npm run dev
    ```
-   Visit `http://localhost:3000`
 
-## Database Schema
-
-The application uses the following tables:
-
-### users
-- `id` (UUID, primary key)
-- `email` (text, unique)
-- `full_name` (text)
-- `role` (text: 'admin', 'project_manager', 'donor')
-- `status` (text: 'active', 'inactive')
-- `created_at` (timestamp)
-
-### projects
-- `id` (UUID, primary key)
-- `name` (text)
-- `description` (text)
-- `budget` (numeric)
-- `spent` (numeric)
-- `status` (text: 'active', 'completed', 'on_hold')
-- `start_date` (date)
-- `end_date` (date)
-- `created_at` (timestamp)
-- `updated_at` (timestamp)
-
-### indicators
-- `id` (UUID, primary key)
-- `project_id` (UUID, foreign key → projects.id)
-- `name` (text)
-- `description` (text)
-- `current_value` (numeric)
-- `target_value` (numeric)
-- `unit` (text)
-- `trend` (text: 'up', 'down', 'stable')
-- `last_updated` (timestamp)
-- `created_at` (timestamp)
-
-### donations
-- `id` (UUID, primary key)
-- `donor_id` (UUID, foreign key → users.id)
-- `project_id` (UUID, foreign key → projects.id)
-- `amount` (numeric)
-- `donation_date` (timestamp)
-
-## Key Features
-
-## User Roles
-
-### Admin
-- Full system access
-- Manage all projects
-- Create and manage users
-- View all financial data
-
-### Project Manager
-- Manage assigned projects
-- Create and update indicators
-- Track project progress
-- Update project status
-
-### Donor
-- View funded projects
-- Track donation impact
-- View project indicators
-- See financial deployment status
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-
-### Projects
-- `GET /api/projects` - List all projects
-- `POST /api/projects` - Create project
-- `GET /api/projects/[id]` - Get project details
-- `PUT /api/projects/[id]` - Update project
-- `DELETE /api/projects/[id]` - Delete project
-
-### Indicators
-- `GET /api/indicators` - List indicators
-- `POST /api/indicators` - Create indicator
-- `PUT /api/indicators/[id]` - Update indicator
-- `DELETE /api/indicators/[id]` - Delete indicator
-
-### Users
-- `GET /api/users` - List users
-- `POST /api/users` - Create user
-- `PUT /api/users/[id]` - Update user
-- `DELETE /api/users/[id]` - Delete user
-
-## Development
-
-### Running Tests
-```bash
-npm test
+```
+POST   /api/auth/register      - Register new user
+POST   /api/auth/login         - Login and get JWT token
+POST   /api/auth/logout        - Logout and clear session
+GET    /api/auth/me            - Get current user profile
 ```
 
-### Building for Production
-```bash
-npm run build
-npm start
+### Projects (Admin only)
+```
+GET    /api/projects           - List all projects
+POST   /api/projects           - Create new project
+GET    /api/projects/[id]      - Get project details
+PATCH  /api/projects/[id]      - Update project
+DELETE /api/projects/[id]      - Delete project
 ```
 
-### Code Quality
-- TypeScript for type safety
-- Tailwind CSS for consistent styling
-- shadcn/ui for accessible components
+### Indicators (Project Manager creates)
+```
+GET    /api/indicators         - List indicators
+POST   /api/indicators         - Create indicator (PM only)
+PATCH  /api/indicators/[id]    - Update indicator value
+DELETE /api/indicators/[id]    - Delete indicator
+```
 
-## Security Features
+### Users (Admin only)
+```
+GET    /api/users              - List all users
+POST   /api/users              - Create new user
+GET    /api/users/[id]         - Get user details
+PATCH  /api/users/[id]         - Update user role/status
+```
 
-- **Authentication**: Supabase Auth with JWT tokens
-- **Authorization**: Row Level Security (RLS) policies
-- **Token Refresh**: Automatic token refresh via middleware
-- **Password Hashing**: Handled by Supabase Auth
-- **HTTPS Only**: Secure cookie transmission
+## Authentication & Roles
 
-## Performance Optimizations
+### User Roles
 
-- **SWR Caching**: Client-side data caching with automatic revalidation
-- **Server Components**: Utilized for initial data fetching
-- **Code Splitting**: Dynamic imports for dashboard components
-- **Image Optimization**: Next.js built-in image optimization
+**Admin**
+- Create and manage projects
+- Create and manage users
+- Assign roles to users
+- View all data in the system
+
+**Project Manager**
+- View assigned projects
+- Create and update indicators
+- Track project progress
+- Cannot manage users or create projects
+
+**Donor**
+- View funded projects (read-only)
+- Monitor project progress
+- Track spending vs. budget
+- No edit permissions
+
+### Login Credentials (Example)
+```
+Admin:
+Email: admin@impacttracker.com
+Password: admin
+
+Project Manager:
+Email: manager@impacttracker.com
+Password: manager
+
+Donor:
+Email: donor@impacttracker.com
+Password: donor
+```
+
+## Testing
+
+The application includes role-based access control. Test each role:
+
+1. **Admin Test**
+   - Login as admin
+   - Create a new project
+   - Create a new user with PM role
+   - View all projects and users
+
+2. **Project Manager Test**
+   - Login as PM
+   - View assigned projects
+   - Create a new indicator
+   - Update indicator value
+
+3. **Donor Test**
+   - Login as donor
+   - View projects you're assigned to
+   - Verify read-only access (no edit buttons)
 
 ## Deployment
 
 ### Deploy to Vercel
 
-1. Push code to GitHub
-2. Connect repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy
+1. **Push your code to GitHub**
+   ```bash
+   git add .
+   git commit -m "Initial commit"
+   git push origin main
+   ```
 
-```bash
-git push origin main
-```
+2. **Connect to Vercel**
+   - Go to [vercel.com](https://vercel.com)
+   - Click "New Project"
+   - Import your GitHub repository
+   - Add environment variables:
+     - `NEXT_PUBLIC_SUPABASE_URL`
+     - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+     - `SUPABASE_SERVICE_ROLE_KEY`
 
-## Troubleshooting
+3. **Deploy**
+   - Click "Deploy"
+   - Your app will be live at `your-project.vercel.app`
 
-### Authentication Issues
-- Ensure Supabase environment variables are set correctly
-- Check if user exists in Supabase auth
-- Verify RLS policies allow user access
+##  Monitoring & KPIs
 
-### Data Not Loading
-- Check browser console for API errors
-- Verify Supabase connection
-- Ensure valid JWT token in localStorage
+See `GOVERNANCE_REPORT.md` for detailed KPI tracking:
+- User adoption rate (target: 85%)
+- Data accuracy score (target: 95%)
+- Donor satisfaction (target: 4.2/5.0)
+- System uptime (target: 99.5%)
 
-### Styling Issues
-- Clear browser cache
-- Rebuild Tailwind CSS: `npm run build`
-- Check for conflicting global styles
+## Security Features
 
-## Contributing
+- ✅ JWT token-based authentication
+- ✅ Role-based access control (RBAC)
+- ✅ httpOnly, Secure cookies
+- ✅ Password hashing via Supabase Auth
+- ✅ API endpoint authorization checks
+- ✅ Row-Level Security (RLS) 
+- 🔄 Audit logging - planned
 
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Commit changes: `git commit -m "Add your feature"`
-3. Push to branch: `git push origin feature/your-feature`
-4. Create Pull Request
+## Roadmap
 
-## License
+**Phase 1 (Current):** Core functionality
+- Authentication & RBAC
+- Project management
+- Indicator tracking
+- Donor dashboards
+
+**Phase 2:** Enhanced features
+- Mobile application
+- Advanced analytics
+- Multi-language support
+- Email notifications
+
+**Phase 3:** Integration
+- External accounting system integration
+- API for third-party apps
+- Custom report generation
+
+
+## 📝 License
 
 This project is licensed under the MIT License - see LICENSE file for details.
 
-## Support
-
-For issues or questions:
-1. Check existing issues on GitHub
-2. Create a new issue with detailed description
-3. Contact the development team
-
 ---
 
-**Last Updated**: November 2025
+**Last Updated:** November 8, 2024  
+**Version:** 2.0  
+**Status:** Production Beta Ready
