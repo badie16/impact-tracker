@@ -17,8 +17,7 @@ export async function GET(request: NextRequest) {
       query = query.eq("project_id", projectId)
     }
 
-    const { data, error } = await query
-
+    const { data, error } = await query    
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }

@@ -33,6 +33,7 @@ interface Indicator {
 
 export function ProjectManagerDashboard() {
   const { projects = [], isLoading: projectsLoading, error: projectsError } = useProjects()
+
   const { logout } = useAuth()
   const {
     indicators = [],

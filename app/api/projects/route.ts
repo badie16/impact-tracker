@@ -10,13 +10,13 @@ export async function GET(request: NextRequest) {
     let query = supabase.from("projects").select("*")
 
     // If userId provided, filter by user's projects
-    if (userId) {
-      query = supabase
-        .from("projects")
-        .select("projects.*")
-        .join("project_assignments", "projects.id = project_assignments.project_id")
-        .eq("project_assignments.user_id", userId)
-    }
+    // if (userId) {
+    //   query = supabase
+    //     .from("projects")
+    //     .select("projects.*")
+    //     .join("project_assignments", "projects.id = project_assignments.project_id")
+    //     .eq("project_assignments.user_id", userId)
+    // }
 
     const { data, error } = await query
 

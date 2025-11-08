@@ -21,7 +21,14 @@ const fetcher = async (url: string) => {
 }
 
 export function useProjects() {
-  const { data, error, isLoading, mutate } = useSWR("/api/projects", fetcher)
+  const { data, error, isLoading, mutate } = useSWR("/api/projects", fetcher, {
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    dedupingInterval: 60000, // 1 minute deduplication
+    focusThrottleInterval: 300000, // 5 minutes throttle on focus
+    errorRetryCount: 2,
+    errorRetryInterval: 5000,
+  })
 
   const createProject = async (project: Omit<Project, "id" | "created_at" | "updated_at">) => {
     const token = localStorage.getItem("auth_token")
