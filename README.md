@@ -103,7 +103,6 @@ impacttrackermain2/
 
 1. **Clone the project**
    ```bash
-   # If you have the ZIP file
    git clone https://github.com/badie16/impact-tracker
    cd impact-tracker
    ```
