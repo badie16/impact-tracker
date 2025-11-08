@@ -293,7 +293,7 @@ See `GOVERNANCE_REPORT.md` for detailed KPI tracking:
 - Custom report generation
 
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see LICENSE file for details.
 
