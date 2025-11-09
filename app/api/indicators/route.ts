@@ -55,7 +55,6 @@ export async function POST(request: NextRequest) {
     if (!project_id || !name || !description || target_value == null || !unit) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
-
     const { data, error } = await supabase
       .from("indicators")
       .insert({
@@ -63,13 +62,12 @@ export async function POST(request: NextRequest) {
         name,
         description,
         target_value,
-        unit,
         current_value: 0,
+        unit,       
         trend: "stable",
       })
       .select()
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
-
     return NextResponse.json({ data: data?.[0] }, { status: 201 })
   } catch (error) {
     console.error("Create indicator error:", error)
