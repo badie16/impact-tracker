@@ -177,6 +177,7 @@ ImpactTracker is a production-ready web-based portal designed to streamline proj
 #### Access Control (To be completed)
 ✅ **Implemented:**
 - Row-Level Security (RLS) policies in PostgreSQL
+- 
 🔄 **Planned:**
 - Audit logging for data modifications
 - User access review procedures
