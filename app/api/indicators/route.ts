@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { project_id, name, description, target_value, unit } = body
+    const { project_id, name, description, target_value, current_value, unit } = body
     if (!project_id || !name || !description || target_value == null || !unit) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         name,
         description,
         target_value,
-        current_value: 0,
+        current_value,
         unit,       
         trend: "stable",
       })
